@@ -1,0 +1,13 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[**.{h,c,hpp,cpp,cppm}]
+indent_style = tab
+indent_size = 4
+
+[{meson.build,meson.options}]
+indent_style = space
+indent_size = 2
