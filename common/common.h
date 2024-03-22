@@ -1,4 +1,4 @@
-#pragam once
+#pragma once
 
 #define MS_B(x)  (x)
 #define MS_KB(x) ((x) << 10)
