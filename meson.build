@@ -1,4 +1,4 @@
-project('mipstuff', 'c', version: '4.9.0')
+project('mipstuff', 'c', version: '4.9.0', default_options : ['c_std=c11'])
 
 incdir = include_directories('.')
 
