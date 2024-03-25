@@ -13,22 +13,50 @@ MSemitter MS_make_emitter() {
 
 #define MASK(n) (1 << n)
 
-#define PACK_BEGIN uint32_t _pack_val = 0; int _write_nth_bit = 31
+#define PACK_BEGIN          \
+	uint32_t _pack_val = 0; \
+	int _write_nth_bit = 31
 // TODO sanity check that v does not have more than `bits` bits
-#define PACK_BITS(v, bits) _pack_val |= (((uint32_t)v & MASK(bits)) << (_write_nth_bit - bits + 1)); _write_nth_bit -= bits
+#define PACK_BITS(v, bits)                                                    \
+	_pack_val |= (((uint32_t)v & MASK(bits)) << (_write_nth_bit - bits + 1)); \
+	_write_nth_bit -= bits
 
 // Known as "R types" in old educational MIPS manuals
 // These are instructions with 0 in the op field, and have 5-5-5-5-5 bit fields coming after that
-#define DO_PACK_SPECIAL(rs, rt, rd, shamt, funct) PACK_BEGIN; PACK_BITS(0, 6); PACK_BITS(rs, 5); PACK_BITS(rt, 5); PACK_BITS(rd, 5); PACK_BITS(shamt, 5); PACK_BITS(funct, 5)
+#define DO_PACK_SPECIAL(rs, rt, rd, shamt, funct) \
+	PACK_BEGIN;                                   \
+	PACK_BITS(0, 6);                              \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(rt, 5);                             \
+	PACK_BITS(rd, 5);                             \
+	PACK_BITS(shamt, 5);                          \
+	PACK_BITS(funct, 5)
 // Known as "I types" in old educational MIPS manuals
-#define DO_PACK_IMM(op, rs, rt, imm) assert(imm >= INT16_MIN && imm <= INT16_MAX); PACK_BEGIN; PACK_BITS(op, 6); PACK_BITS(rs, 5); PACK_BITS(rt, 5); PACK_BITS(imm, 16)
-#define DO_PACK_J_TYPE(op, imm) assert(MS_INT_IN_RANGE(imm, 26)); PACK_BEGIN; PACK_BITS(op, 6); PACK_BITS(imm, 26)
-#define DO_PACK_REGIMM(rs, code, imm) assert(imm >= INT16_MIN && imm <= INT16_MAX); PACK_BEGIN; PACK_BITS(0b000001, 6); PACK_BITS(rs, 5); PACK_BITS(code, 5); PACK_BITS(imm, 16)
+#define DO_PACK_IMM(op, rs, rt, imm)              \
+	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
+	PACK_BEGIN;                                   \
+	PACK_BITS(op, 6);                             \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(rt, 5);                             \
+	PACK_BITS(imm, 16)
+#define DO_PACK_J_TYPE(op, imm)       \
+	assert(MS_INT_IN_RANGE(imm, 26)); \
+	PACK_BEGIN;                       \
+	PACK_BITS(op, 6);                 \
+	PACK_BITS(imm, 26)
+#define DO_PACK_REGIMM(rs, code, imm)             \
+	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
+	PACK_BEGIN;                                   \
+	PACK_BITS(0b000001, 6);                       \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(code, 5);                           \
+	PACK_BITS(imm, 16)
 
 #if defined(__GNUC__) || defined(__clang__)
 #	define PACK_GET_VALUE ({ assert(_write_nth_bit == 0); _pack_val; })
 #else
-#	define PACK_GET_VALUE _pack_val
+// Best effort, assume that assert() expands to some kind of expression
+#	define PACK_GET_VALUE _pack_val(assert(_write_nth_bit == 0), _pack_val)
 #endif
 
 // Add Word (trapping)
@@ -110,4 +138,79 @@ void MS_emit_bltz(MSemitter* e, MSreg rs, MSimmediate offset) {
 }
 
 // TODO B{LE,GE,GT,LT,EQ,NE}ZALC
-// TODO B<cond>C
+
+// Compact Compare-and-Branch
+#define B_COND_C_16(op, rs, rt, offset)                      \
+	{                                                        \
+		DO_PACK_IMM(op, rs, rt, offset);                     \
+		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
+	}
+#define B_COND_C_21(op, rs, offset)                          \
+	{                                                        \
+		assert(rs != 0);                                     \
+		PACK_BEGIN;                                          \
+		PACK_BITS(op, 6);                                    \
+		PACK_BITS(rs, 5);                                    \
+		PACK_BITS(offset, 21);                               \
+		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
+	}
+
+#define POP26 0b010110
+#define RAW_EMIT_BLEZC(e, reg, offset) B_COND_C_16(POP26, 0, reg, offset)
+#define RAW_EMIT_BGEZC(e, reg, offset) B_COND_C_16(POP26, reg, reg, offset)
+#define RAW_EMIT_BGEC(e, rs, rt, offset) B_COND_C_16(POP26, rs, rt, offset)
+#define RAW_EMIT_BLEC(e, rs, rt, offset) B_COND_C_16(POP26, rt, rs, offset)
+
+#define POP27 0b010111
+#define RAW_EMIT_BGTZC(e, reg, offset) B_COND_C_16(POP27, 0, reg, offset)
+#define RAW_EMIT_BLTZC(e, reg, offset) B_COND_C_16(POP27, reg, reg, offset)
+#define RAW_EMIT_BLTC(e, rs, rt, offset) B_COND_C_16(POP27, rs, rt, offset)
+#define RAW_EMIT_BGTC(e, rs, rt, offset) B_COND_C_16(POP27, rt, rs, offset)
+
+#define POP06 0b000110
+#define RAW_EMIT_BGEUC(e, rs, rt, offset) B_COND_C_16(POP06, rs, rt, offset)
+#define RAW_EMIT_BLEUC(e, rs, rt, offset) B_COND_C_16(POP06, rt, rs, offset)
+
+#define POP07 0b000111
+#define RAW_EMIT_BLTUC(e, rs, rt, offset) B_COND_C_16(POP07, rs, rt, offset)
+#define RAW_EMIT_BGTUC(e, rs, rt, offset) B_COND_C_16(POP07, rt, rs, offset)
+
+#define POP10 0b001000
+#define RAW_EMIT_BEQC(e, rs, rt, offset) B_COND_C(POP10, rs, rt, offset)
+
+#define POP30 0b011000
+#define RAW_EMIT_BNEC(e, rs, rt, offset) B_COND_C(POP30, rs, rt, offset)
+
+// TODO inequality comparision emitters
+
+#define POP66 0b110110
+#define RAW_EMIT_BEQZC(e, rs, offset) B_COND_C_21(POP66, rs, offset)
+
+#define POP76 0b111110
+#define RAW_EMIT_BNEZC(e, rs, offset) B_COND_C_21(POP76, rs, offset)
+
+static void MS_emit_bcompc(MSemitter* e, MSreg rs, MSreg rt, int regular_op, int zero_op, MSimmediate offset) {
+	if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) {
+		// Comparision to zero
+		if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
+			// TODO emit the correct bc/nop instructions?
+		} else if (rs == MIPS_R_ZERO) {
+			B_COND_C_21(zero_op, rt, offset);
+		} else /* if (rt == MIPS_R_ZERO) */ {
+			B_COND_C_21(zero_op, rs, offset);
+		}
+	} else {
+		// Comparision between registers
+		if (rt > rs)
+			MS_SWAP_VARS(rs, rt);
+		B_COND_C_16(regular_op, rs, rt, offset);
+	}
+}
+
+void MS_emit_beqc(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
+	MS_emit_bcompc(e, rs, rt, POP10, POP66, offset);
+}
+
+void MS_emit_bnec(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
+	MS_emit_bcompc(e, rs, rt, POP30, POP76, offset);
+}
