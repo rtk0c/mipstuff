@@ -204,8 +204,8 @@ static MScomp MS_flip_comp(MScomp comp) {
 		case MScomp_GREATER: return MScomp_LESSER;
 		case MScomp_LESSER_EQ: return MScomp_GREATER_EQ;
 		case MScomp_GREATER_EQ: return MScomp_LESSER_EQ;
+		default: return comp;
 	}
-	assert(false);
 }
 
 void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg rt, MSimmediate offset) {
@@ -280,19 +280,40 @@ void MS_emit_bnezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
 #define POP76 0b111110
 #define RAW_EMIT_BNEZC(e, rs, offset) DO_PACK_BCONDC_21(POP76, rs, offset)
 
+void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg rs, MSreg rt, MSimmediate offset) {
+	if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
+		assert(false);
+	} else if (rs == MIPS_R_ZERO) {
+		MS_SWAP_VARS(rs, rt);
+		comp = MS_flip_comp(comp);
+	} else if (rt == MIPS_R_ZERO) {
+		// No-op, this is the order that we want
+	} else /* if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) */ {
+		// No such instructions for the branch-and-link variants
+		assert(false);
+	}
+
+	switch (comp) {
+		case MScomp_LESSER: RAW_EMIT_BLTZALC(e, rs, offset); return;
+		case MScomp_GREATER: RAW_EMIT_BGTZALC(e, rs, offset); return;
+		case MScomp_LESSER_EQ: RAW_EMIT_BLEZALC(e, rs, offset); return;
+		case MScomp_GREATER_EQ: RAW_EMIT_BGEZALC(e, rs, offset); return;
+		case MScomp_EQUALS: RAW_EMIT_BEQZALC(e, rs, offset); return;
+		case MScomp_NOT_EQUALS: RAW_EMIT_BNEZALC(e, rs, offset); return;
+	}
+	assert(false);
+}
+
 // NOTE: this is best as a separate function from MS_emit_bcompc() because beq/bne has very different encoding compared to
 static void MS_emit_bcompc_21(MSemitter* e, MSreg rs, MSreg rt, int regular_op, int zero_op, MSimmediate offset) {
-	if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) {
-		// Comparision to zero
-		if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
-			assert(false);
-		} else if (rs == MIPS_R_ZERO) {
-			DO_PACK_BCONDC_21(zero_op, rt, offset);
-		} else /* if (rt == MIPS_R_ZERO) */ {
-			DO_PACK_BCONDC_21(zero_op, rs, offset);
-		}
-	} else {
-		// Comparision between registers
+	if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
+		assert(false);
+	} else if (rs == MIPS_R_ZERO) {
+		DO_PACK_BCONDC_21(zero_op, rt, offset);
+	} else if (rt == MIPS_R_ZERO) {
+		DO_PACK_BCONDC_21(zero_op, rs, offset);
+	} else /* if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) */ {
+		// Comparison between registers
 		if (rt > rs)
 			MS_SWAP_VARS(rs, rt);
 		DO_PACK_BCONDC_16(regular_op, rs, rt, offset);
