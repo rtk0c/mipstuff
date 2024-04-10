@@ -197,6 +197,28 @@ void MS_emit_bltzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
 	RAW_EMIT_BLTZALC(e, reg, offset);
 }
 
+#define POP10 0b001000
+#define RAW_EMIT_BEQC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP10, rs, rt, offset)
+#define RAW_EMIT_BEQZALC(e, reg, offset) DO_PACK_BCONDC_16(POP10, 0, reg, offset)
+
+void MS_emit_beqzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BEQZALC(e, reg, offset);
+}
+
+#define POP30 0b011000
+#define RAW_EMIT_BNEC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP30, rs, rt, offset)
+#define RAW_EMIT_BNEZALC(e, reg, offset) DO_PACK_BCONDC_16(POP30, 0, reg, offset)
+
+void MS_emit_bnezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BNEZALC(e, reg, offset);
+}
+
+#define POP66 0b110110
+#define RAW_EMIT_BEQZC(e, rs, offset) DO_PACK_BCONDC_21(POP66, rs, offset)
+
+#define POP76 0b111110
+#define RAW_EMIT_BNEZC(e, rs, offset) DO_PACK_BCONDC_21(POP76, rs, offset)
+
 // Change the operator as if doing a `a < b` => `b > a` flip
 static MScomp MS_flip_comp(MScomp comp) {
 	switch (comp) {
@@ -225,6 +247,8 @@ void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg
 			case MScomp_GREATER: RAW_EMIT_BGTZC(e, rs, offset); return;
 			case MScomp_LESSER_EQ: RAW_EMIT_BLEZC(e, rs, offset); return;
 			case MScomp_GREATER_EQ: RAW_EMIT_BGEZC(e, rs, offset); return;
+			case MScomp_EQUALS: RAW_EMIT_BEQZC(e, rs, offset); return;
+			case MScomp_NOT_EQUALS: RAW_EMIT_BNEZC(e, rs, offset); return;
 		}
 		assert(false);
 	} else {
@@ -235,50 +259,47 @@ void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg
 				else
 					RAW_EMIT_BLTC(e, rs, rt, offset);
 				return;
+
 			case MScomp_GREATER:
 				if (is_unsigned)
 					RAW_EMIT_BGTUC(e, rs, rt, offset)
 				else
 					RAW_EMIT_BGTC(e, rs, rt, offset);
 				return;
+
 			case MScomp_LESSER_EQ:
 				if (is_unsigned)
 					RAW_EMIT_BLEUC(e, rs, rt, offset)
 				else
 					RAW_EMIT_BLEC(e, rs, rt, offset);
 				return;
+
 			case MScomp_GREATER_EQ:
 				if (is_unsigned)
 					RAW_EMIT_BGEUC(e, rs, rt, offset)
 				else
 					RAW_EMIT_BGEC(e, rs, rt, offset);
 				return;
+
+			case MScomp_EQUALS:
+				// Comparison between registers
+				// beqc needs rs < rt
+				if (rt > rs)
+					MS_SWAP_VARS(rs, rt);
+				RAW_EMIT_BEQC(e, rs, rt, offset);
+				return;
+
+			case MScomp_NOT_EQUALS:
+				// Comparison between registers
+				// bnec needs rs < rt
+				if (rt > rs)
+					MS_SWAP_VARS(rs, rt);
+				RAW_EMIT_BNEC(e, rs, rt, offset);
+				return;
 		}
 		assert(false);
 	}
 }
-
-#define POP10 0b001000
-#define RAW_EMIT_BEQC(e, rs, rt, offset) B_COND_C(POP10, rs, rt, offset)
-#define RAW_EMIT_BEQZALC(e, reg, offset) DO_PACK_BCONDC_16(POP10, 0, reg, offset)
-
-void MS_emit_beqzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
-	RAW_EMIT_BEQZALC(e, reg, offset);
-}
-
-#define POP30 0b011000
-#define RAW_EMIT_BNEC(e, rs, rt, offset) B_COND_C(POP30, rs, rt, offset)
-#define RAW_EMIT_BNEZALC(e, reg, offset) DO_PACK_BCONDC_16(POP30, 0, reg, offset)
-
-void MS_emit_bnezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
-	RAW_EMIT_BNEZALC(e, reg, offset);
-}
-
-#define POP66 0b110110
-#define RAW_EMIT_BEQZC(e, rs, offset) DO_PACK_BCONDC_21(POP66, rs, offset)
-
-#define POP76 0b111110
-#define RAW_EMIT_BNEZC(e, rs, offset) DO_PACK_BCONDC_21(POP76, rs, offset)
 
 void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg rs, MSreg rt, MSimmediate offset) {
 	if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
@@ -304,26 +325,10 @@ void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg rs, MSreg rt, MSimmedi
 	assert(false);
 }
 
-// NOTE: this is best as a separate function from MS_emit_bcompc() because beq/bne has very different encoding compared to
-static void MS_emit_bcompc_21(MSemitter* e, MSreg rs, MSreg rt, int regular_op, int zero_op, MSimmediate offset) {
-	if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
-		assert(false);
-	} else if (rs == MIPS_R_ZERO) {
-		DO_PACK_BCONDC_21(zero_op, rt, offset);
-	} else if (rt == MIPS_R_ZERO) {
-		DO_PACK_BCONDC_21(zero_op, rs, offset);
-	} else /* if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) */ {
-		// Comparison between registers
-		if (rt > rs)
-			MS_SWAP_VARS(rs, rt);
-		DO_PACK_BCONDC_16(regular_op, rs, rt, offset);
-	}
-}
-
 void MS_emit_beqc(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
-	MS_emit_bcompc_21(e, rs, rt, POP10, POP66, offset);
+	MS_emit_bcompc(e, MScomp_EQUALS, false, rs, rt, offset);
 }
 
 void MS_emit_bnec(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
-	MS_emit_bcompc_21(e, rs, rt, POP30, POP76, offset);
+	MS_emit_bcompc(e, MScomp_NOT_EQUALS, false, rs, rt, offset);
 }

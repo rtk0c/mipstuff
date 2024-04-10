@@ -38,9 +38,6 @@ typedef enum {
 	MScomp_NOT_EQUALS,
 } MScomp;
 
-// TODO expose raw emitters?
-void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg rt, MSimmediate offset);
-
 void MS_emit_blezalc(MSemitter* e, MSreg reg, MSimmediate offset);
 void MS_emit_bgezalc(MSemitter* e, MSreg reg, MSimmediate offset);
 void MS_emit_bgtzalc(MSemitter* e, MSreg reg, MSimmediate offset);
@@ -49,6 +46,8 @@ void MS_emit_bltzalc(MSemitter* e, MSreg reg, MSimmediate offset);
 void MS_emit_beqzalc(MSemitter* e, MSreg reg, MSimmediate offset);
 void MS_emit_bnezalc(MSemitter* e, MSreg reg, MSimmediate offset);
 
+// TODO expose raw emitters?
+void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg rt, MSimmediate offset);
 void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg rs, MSreg rt, MSimmediate offset);
 
 void MS_emit_beqc(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset);
