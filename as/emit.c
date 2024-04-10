@@ -140,8 +140,6 @@ void MS_emit_balc(MSemitter* e, MSimmediate offset) {
 	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
 }
 
-// TODO B{LE,GE,GT,LT,EQ,NE}ZALC
-
 // Compact Compare-and-Branch, 16 bit offset
 #define DO_PACK_BCONDC_16(op, rs, rt, offset)                \
 	{                                                        \
@@ -174,10 +172,30 @@ void MS_emit_balc(MSemitter* e, MSimmediate offset) {
 #define POP06 0b000110
 #define RAW_EMIT_BGEUC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP06, rs, rt, offset)
 #define RAW_EMIT_BLEUC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP06, rt, rs, offset)
+#define RAW_EMIT_BLEZALC(e, reg, offset) DO_PACK_BCONDC_16(POP06, 0, reg, offset)
+#define RAW_EMIT_BGEZALC(e, reg, offset) DO_PACK_BCONDC_16(POP06, reg, reg, offset)
+
+void MS_emit_blezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BLEZALC(e, reg, offset);
+}
+
+void MS_emit_bgezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BGEZALC(e, reg, offset);
+}
 
 #define POP07 0b000111
 #define RAW_EMIT_BLTUC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP07, rs, rt, offset)
 #define RAW_EMIT_BGTUC(e, rs, rt, offset) DO_PACK_BCONDC_16(POP07, rt, rs, offset)
+#define RAW_EMIT_BGTZALC(e, reg, offset) DO_PACK_BCONDC_16(POP07, 0, reg, offset)
+#define RAW_EMIT_BLTZALC(e, reg, offset) DO_PACK_BCONDC_16(POP07, reg, reg, offset)
+
+void MS_emit_bgtzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BGTZALC(e, reg, offset);
+}
+
+void MS_emit_bltzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BLTZALC(e, reg, offset);
+}
 
 // Change the operator as if doing a `a < b` => `b > a` flip
 static MScomp MS_flip_comp(MScomp comp) {
@@ -242,9 +260,19 @@ void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg
 
 #define POP10 0b001000
 #define RAW_EMIT_BEQC(e, rs, rt, offset) B_COND_C(POP10, rs, rt, offset)
+#define RAW_EMIT_BEQZALC(e, reg, offset) DO_PACK_BCONDC_16(POP10, 0, reg, offset)
+
+void MS_emit_beqzalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BEQZALC(e, reg, offset);
+}
 
 #define POP30 0b011000
 #define RAW_EMIT_BNEC(e, rs, rt, offset) B_COND_C(POP30, rs, rt, offset)
+#define RAW_EMIT_BNEZALC(e, reg, offset) DO_PACK_BCONDC_16(POP30, 0, reg, offset)
+
+void MS_emit_bnezalc(MSemitter* e, MSreg reg, MSimmediate offset) {
+	RAW_EMIT_BNEZALC(e, reg, offset);
+}
 
 #define POP66 0b110110
 #define RAW_EMIT_BEQZC(e, rs, offset) DO_PACK_BCONDC_21(POP66, rs, offset)
