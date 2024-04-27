@@ -14,7 +14,9 @@ MSemitter MS_make_emitter() {
 
 // N.B. these macros don't parenthesize their arguments. Be careful in usages to not put complex expressions in.
 
-#define MASK(n) (1 << n)
+// This does not work for n=32 (filling the whole literal with bit 1), but we don't need it for the emitter
+// WATCH OUT AND BE CAREFULY TO NOT USE IT THAT WAY IN THE FUTURE
+#define MASK(n) ((1 << n) - 1)
 
 #define PACK_BEGIN          \
 	uint32_t _pack_val = 0; \
