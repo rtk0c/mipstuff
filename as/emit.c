@@ -18,51 +18,54 @@ MSemitter MS_make_emitter() {
 // WATCH OUT AND BE CAREFULY TO NOT USE IT THAT WAY IN THE FUTURE
 #define MASK(n) ((1 << n) - 1)
 
+#define MIPS_WORD_TYPE uint32_t
+#define MIPS_WORD_BITS 32
+
 #define PACK_BEGIN          \
 	uint32_t _pack_val = 0; \
-	int _write_nth_bit = 31
+	int _write_nth_bit = 0
 // TODO sanity check that v does not have more than `bits` bits
 #define PACK_BITS(v, bits)                                                    \
-	_pack_val |= (((uint32_t)v & MASK(bits)) << (_write_nth_bit - bits + 1)); \
-	_write_nth_bit -= bits
+	_pack_val |= (((uint32_t)v & MASK(bits)) << _write_nth_bit); \
+	_write_nth_bit += bits
+
+#if defined(__GNUC__) || defined(__clang__)
+#	define PACK_GET_VALUE ({ assert(_write_nth_bit == MIPS_WORD_BITS); _pack_val; })
+#else
+// Best effort, assume that assert() expands to some kind of expression
+#	define PACK_GET_VALUE _pack_val(assert(_write_nth_bit == MIPS_WORD_BITS), _pack_val)
+#endif
 
 // Known as "R types" in old educational MIPS manuals
 // These are instructions with 0 in the op field, and have 5-5-5-5-5 bit fields coming after that
 #define DO_PACK_SPECIAL(rs, rt, rd, shamt, funct) \
 	PACK_BEGIN;                                   \
-	PACK_BITS(0, 6);                              \
-	PACK_BITS(rs, 5);                             \
-	PACK_BITS(rt, 5);                             \
-	PACK_BITS(rd, 5);                             \
+	PACK_BITS(funct, 5);                          \
 	PACK_BITS(shamt, 5);                          \
-	PACK_BITS(funct, 5)
+	PACK_BITS(rd, 5);                             \
+	PACK_BITS(rt, 5);                             \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(0, 6)
 // Known as "I types" in old educational MIPS manuals
-#define DO_PACK_IMM(op, rs, rt, imm)              \
+#define DO_PACK_IMM(op, rs, rt, imm) \
 	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
 	PACK_BEGIN;                                   \
-	PACK_BITS(op, 6);                             \
-	PACK_BITS(rs, 5);                             \
+	PACK_BITS(imm, 16);                           \
 	PACK_BITS(rt, 5);                             \
-	PACK_BITS(imm, 16)
-#define DO_PACK_J_TYPE(op, imm)       \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(op, 6)
+#define DO_PACK_REGIMM(rs, code, imm) \
+	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
+	PACK_BEGIN;                                   \
+	PACK_BITS(imm, 16);                           \
+	PACK_BITS(code, 5);                           \
+	PACK_BITS(rs, 5);                             \
+	PACK_BITS(0b000001, 6)
+#define DO_PACK_J_TYPE(op, imm) \
 	assert(MS_INT_IN_RANGE(imm, 26)); \
 	PACK_BEGIN;                       \
-	PACK_BITS(op, 6);                 \
-	PACK_BITS(imm, 26)
-#define DO_PACK_REGIMM(rs, code, imm)             \
-	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
-	PACK_BEGIN;                                   \
-	PACK_BITS(0b000001, 6);                       \
-	PACK_BITS(rs, 5);                             \
-	PACK_BITS(code, 5);                           \
-	PACK_BITS(imm, 16)
-
-#if defined(__GNUC__) || defined(__clang__)
-#	define PACK_GET_VALUE ({ assert(_write_nth_bit == 0); _pack_val; })
-#else
-// Best effort, assume that assert() expands to some kind of expression
-#	define PACK_GET_VALUE _pack_val(assert(_write_nth_bit == 0), _pack_val)
-#endif
+	PACK_BITS(imm, 26);               \
+	PACK_BITS(op, 6)
 
 // Add Word (trapping)
 void MS_emit_add(MSemitter* e, MSreg dst, MSreg op1, MSreg op2) {
@@ -86,10 +89,10 @@ void MS_emit_addiu(MSemitter* e, MSreg dst, MSreg op, MSimmediate imm) {
 void MS_emit_addiupc(MSemitter* e, MSreg dst, MSimmediate imm) {
 	assert(imm >= INT16_MIN && imm <= INT16_MAX);
 	PACK_BEGIN;
-	PACK_BITS(0b111011, 6);
-	PACK_BITS(dst, 5);
-	PACK_BITS(0b00, 2);
 	PACK_BITS(imm, 19);
+	PACK_BITS(0b00, 2);
+	PACK_BITS(dst, 5);
+	PACK_BITS(0b111011, 6);
 	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
 }
 
@@ -149,13 +152,13 @@ void MS_emit_balc(MSemitter* e, MSimmediate offset) {
 		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
 	}
 // Compact Compare-and-Branch, 21 bit offset
-#define DO_PACK_BCONDC_21(op, rs, offset)                    \
-	{                                                        \
+#define DO_PACK_BCONDC_21(op, rs, offset) \
+	{                                                      \
 		assert(rs != 0);                                     \
 		PACK_BEGIN;                                          \
-		PACK_BITS(op, 6);                                    \
-		PACK_BITS(rs, 5);                                    \
 		PACK_BITS(offset, 21);                               \
+		PACK_BITS(rs, 5);                                    \
+		PACK_BITS(op, 6);                                    \
 		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
 	}
 
