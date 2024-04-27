@@ -12,28 +12,27 @@ MSemitter MS_make_emitter() {
 	return res;
 }
 
-// N.B. these macros don't parenthesize their arguments. Be careful in usages to not put complex expressions in.
-
 // This does not work for n=32 (filling the whole literal with bit 1), but we don't need it for the emitter
 // WATCH OUT AND BE CAREFULY TO NOT USE IT THAT WAY IN THE FUTURE
-#define MASK(n) ((1 << n) - 1)
+#define MASK(n) ((1 << (n)) - 1)
 
 #define MIPS_WORD_TYPE uint32_t
 #define MIPS_WORD_BITS 32
 
-#define PACK_BEGIN          \
-	uint32_t _pack_val = 0; \
+
+#define PACK_BEGIN \
+	MIPS_WORD_TYPE _pack_val = 0; \
 	int _write_nth_bit = 0
 // TODO sanity check that v does not have more than `bits` bits
 #define PACK_BITS(v, bits)                                                    \
-	_pack_val |= (((uint32_t)v & MASK(bits)) << _write_nth_bit); \
-	_write_nth_bit += bits
+	_pack_val |= (((MIPS_WORD_TYPE)(v) & MASK(bits)) << _write_nth_bit); \
+	_write_nth_bit += (bits)
 
 #if defined(__GNUC__) || defined(__clang__)
 #	define PACK_GET_VALUE ({ assert(_write_nth_bit == MIPS_WORD_BITS); _pack_val; })
 #else
 // Best effort, assume that assert() expands to some kind of expression
-#	define PACK_GET_VALUE _pack_val(assert(_write_nth_bit == MIPS_WORD_BITS), _pack_val)
+#	define PACK_GET_VALUE (assert(_write_nth_bit == MIPS_WORD_BITS), _pack_val)
 #endif
 
 // Known as "R types" in old educational MIPS manuals
