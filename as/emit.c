@@ -19,12 +19,11 @@ MSemitter MS_make_emitter() {
 #define MIPS_WORD_TYPE uint32_t
 #define MIPS_WORD_BITS 32
 
-
 #define PACK_BEGIN \
 	MIPS_WORD_TYPE _pack_val = 0; \
 	int _write_nth_bit = 0
 // TODO sanity check that v does not have more than `bits` bits
-#define PACK_BITS(v, bits)                                                    \
+#define PACK_BITS(v, bits) \
 	_pack_val |= (((MIPS_WORD_TYPE)(v) & MASK(bits)) << _write_nth_bit); \
 	_write_nth_bit += (bits)
 
@@ -38,32 +37,32 @@ MSemitter MS_make_emitter() {
 // Known as "R types" in old educational MIPS manuals
 // These are instructions with 0 in the op field, and have 5-5-5-5-5 bit fields coming after that
 #define DO_PACK_SPECIAL(rs, rt, rd, shamt, funct) \
-	PACK_BEGIN;                                   \
-	PACK_BITS(funct, 5);                          \
-	PACK_BITS(shamt, 5);                          \
-	PACK_BITS(rd, 5);                             \
-	PACK_BITS(rt, 5);                             \
-	PACK_BITS(rs, 5);                             \
+	PACK_BEGIN; \
+	PACK_BITS(funct, 5); \
+	PACK_BITS(shamt, 5); \
+	PACK_BITS(rd, 5); \
+	PACK_BITS(rt, 5); \
+	PACK_BITS(rs, 5); \
 	PACK_BITS(0, 6)
 // Known as "I types" in old educational MIPS manuals
 #define DO_PACK_IMM(op, rs, rt, imm) \
 	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
-	PACK_BEGIN;                                   \
-	PACK_BITS(imm, 16);                           \
-	PACK_BITS(rt, 5);                             \
-	PACK_BITS(rs, 5);                             \
+	PACK_BEGIN; \
+	PACK_BITS(imm, 16); \
+	PACK_BITS(rt, 5); \
+	PACK_BITS(rs, 5); \
 	PACK_BITS(op, 6)
 #define DO_PACK_REGIMM(rs, code, imm) \
 	assert(imm >= INT16_MIN && imm <= INT16_MAX); \
-	PACK_BEGIN;                                   \
-	PACK_BITS(imm, 16);                           \
-	PACK_BITS(code, 5);                           \
-	PACK_BITS(rs, 5);                             \
+	PACK_BEGIN; \
+	PACK_BITS(imm, 16); \
+	PACK_BITS(code, 5); \
+	PACK_BITS(rs, 5); \
 	PACK_BITS(0b000001, 6)
 #define DO_PACK_J_TYPE(op, imm) \
 	assert(MS_INT_IN_RANGE(imm, 26)); \
-	PACK_BEGIN;                       \
-	PACK_BITS(imm, 26);               \
+	PACK_BEGIN; \
+	PACK_BITS(imm, 26); \
 	PACK_BITS(op, 6)
 
 // Add Word (trapping)
@@ -145,19 +144,19 @@ void MS_emit_balc(MSemitter* e, MSimmediate offset) {
 }
 
 // Compact Compare-and-Branch, 16 bit offset
-#define DO_PACK_BCONDC_16(op, rs, rt, offset)                \
-	{                                                        \
-		DO_PACK_IMM(op, rs, rt, offset);                     \
+#define DO_PACK_BCONDC_16(op, rs, rt, offset) \
+	{ \
+		DO_PACK_IMM(op, rs, rt, offset); \
 		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
 	}
 // Compact Compare-and-Branch, 21 bit offset
 #define DO_PACK_BCONDC_21(op, rs, offset) \
-	{                                                      \
-		assert(rs != 0);                                     \
-		PACK_BEGIN;                                          \
-		PACK_BITS(offset, 21);                               \
-		PACK_BITS(rs, 5);                                    \
-		PACK_BITS(op, 6);                                    \
+	{ \
+		assert(rs != 0); \
+		PACK_BEGIN; \
+		PACK_BITS(offset, 21); \
+		PACK_BITS(rs, 5); \
+		PACK_BITS(op, 6); \
 		MS_buf_append_u32(&e->instructions, PACK_GET_VALUE); \
 	}
 

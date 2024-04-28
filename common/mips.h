@@ -45,10 +45,10 @@
 #define MIPS_R_K1 27
 #define MIPS_R_KN(n) (MIPS_R_K0 + (n))
 
-#define MIPS_R_GP 28 // Global Pointer
-#define MIPS_R_SP 29 // Stack Pointer
-#define MIPS_R_FP 30 // Frame Pointer
-#define MIPS_R_RA 31 // Return Address
+#define MIPS_R_GP 28 //< Global Pointer
+#define MIPS_R_SP 29 //< Stack Pointer
+#define MIPS_R_FP 30 //< Frame Pointer
+#define MIPS_R_RA 31 //< Return Address
 
 typedef int MSreg;
 typedef int MSimmediate;

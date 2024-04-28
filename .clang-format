@@ -4,6 +4,7 @@ AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
 AlignOperands: false
 AlignTrailingComments: false
+AlignEscapedNewlines: DontAlign
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowAllArgumentsOnNextLine: true
 AllowShortBlocksOnASingleLine: Always
