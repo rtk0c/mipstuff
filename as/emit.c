@@ -257,46 +257,52 @@ void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg
 	} else {
 		switch (comp) {
 			case MScomp_LESSER:
-				if (is_unsigned)
-					RAW_EMIT_BLTUC(e, rs, rt, offset)
-				else
+				if (is_unsigned) {
+					RAW_EMIT_BLTUC(e, rs, rt, offset);
+				} else {
 					RAW_EMIT_BLTC(e, rs, rt, offset);
+				}
 				return;
 
 			case MScomp_GREATER:
-				if (is_unsigned)
-					RAW_EMIT_BGTUC(e, rs, rt, offset)
-				else
+				if (is_unsigned) {
+					RAW_EMIT_BGTUC(e, rs, rt, offset);
+				} else {
 					RAW_EMIT_BGTC(e, rs, rt, offset);
+				}
 				return;
 
 			case MScomp_LESSER_EQ:
-				if (is_unsigned)
-					RAW_EMIT_BLEUC(e, rs, rt, offset)
-				else
+				if (is_unsigned) {
+					RAW_EMIT_BLEUC(e, rs, rt, offset);
+				} else {
 					RAW_EMIT_BLEC(e, rs, rt, offset);
+				}
 				return;
 
 			case MScomp_GREATER_EQ:
-				if (is_unsigned)
-					RAW_EMIT_BGEUC(e, rs, rt, offset)
-				else
+				if (is_unsigned) {
+					RAW_EMIT_BGEUC(e, rs, rt, offset);
+				} else {
 					RAW_EMIT_BGEC(e, rs, rt, offset);
+				}
 				return;
 
 			case MScomp_EQUALS:
 				// Comparison between registers
 				// beqc needs rs < rt
-				if (rt > rs)
+				if (rt > rs) {
 					MS_SWAP_VARS(rs, rt);
+				}
 				RAW_EMIT_BEQC(e, rs, rt, offset);
 				return;
 
 			case MScomp_NOT_EQUALS:
 				// Comparison between registers
 				// bnec needs rs < rt
-				if (rt > rs)
+				if (rt > rs) {
 					MS_SWAP_VARS(rs, rt);
+				}
 				RAW_EMIT_BNEC(e, rs, rt, offset);
 				return;
 		}
