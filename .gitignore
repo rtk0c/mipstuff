@@ -1,10 +1,15 @@
-# Xmake cache
+# Buildsystem cache
 .xmake/
 .vs/
 vs*/
 build/
+builddir/
 
 # MacOS Cache
 .DS_Store
 
+# Other ignored
+.cache/
+.local/
+compile_commands.json
 
