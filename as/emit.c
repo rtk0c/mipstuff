@@ -310,34 +310,14 @@ void MS_emit_bcompc(MSemitter* e, MScomp comp, bool is_unsigned, MSreg rs, MSreg
 	}
 }
 
-void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg rs, MSreg rt, MSimmediate offset) {
-	if (rs == MIPS_R_ZERO && rt == MIPS_R_ZERO) {
-		assert(false);
-	} else if (rs == MIPS_R_ZERO) {
-		MS_SWAP_VARS(rs, rt);
-		comp = MS_flip_comp(comp);
-	} else if (rt == MIPS_R_ZERO) {
-		// No-op, this is the order that we want
-	} else /* if (rs == MIPS_R_ZERO || rt == MIPS_R_ZERO) */ {
-		// No such instructions for the branch-and-link variants
-		assert(false);
-	}
-
+void MS_emit_bcompc_link(MSemitter* e, MScomp comp, MSreg reg, MSimmediate offset) {
 	switch (comp) {
-		case MScomp_LESSER: RAW_EMIT_BLTZALC(e, rs, offset); return;
-		case MScomp_GREATER: RAW_EMIT_BGTZALC(e, rs, offset); return;
-		case MScomp_LESSER_EQ: RAW_EMIT_BLEZALC(e, rs, offset); return;
-		case MScomp_GREATER_EQ: RAW_EMIT_BGEZALC(e, rs, offset); return;
-		case MScomp_EQUALS: RAW_EMIT_BEQZALC(e, rs, offset); return;
-		case MScomp_NOT_EQUALS: RAW_EMIT_BNEZALC(e, rs, offset); return;
+		case MScomp_LESSER: RAW_EMIT_BLTZALC(e, reg, offset); return;
+		case MScomp_GREATER: RAW_EMIT_BGTZALC(e, reg, offset); return;
+		case MScomp_LESSER_EQ: RAW_EMIT_BLEZALC(e, reg, offset); return;
+		case MScomp_GREATER_EQ: RAW_EMIT_BGEZALC(e, reg, offset); return;
+		case MScomp_EQUALS: RAW_EMIT_BEQZALC(e, reg, offset); return;
+		case MScomp_NOT_EQUALS: RAW_EMIT_BNEZALC(e, reg, offset); return;
 	}
 	assert(false);
-}
-
-void MS_emit_beqc(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
-	MS_emit_bcompc(e, MScomp_EQUALS, false, rs, rt, offset);
-}
-
-void MS_emit_bnec(MSemitter* e, MSreg rs, MSreg rt, MSimmediate offset) {
-	MS_emit_bcompc(e, MScomp_NOT_EQUALS, false, rs, rt, offset);
 }
