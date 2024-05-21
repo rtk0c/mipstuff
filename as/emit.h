@@ -10,11 +10,31 @@ typedef struct MSemitter {
 
 MSemitter MS_make_emitter();
 
+/* Section: Integer Arithmetic */
+
 void MS_emit_add(MSemitter* e, MSreg dst, MSreg op1, MSreg op2);
 void MS_emit_addu(MSemitter* e, MSreg dst, MSreg op1, MSreg op2);
 void MS_emit_addiu(MSemitter* e, MSreg dst, MSreg op, MSimmediate imm);
 void MS_emit_addiupc(MSemitter* e, MSreg dst, MSimmediate imm);
 void MS_emit_sub(MSemitter* e, MSreg dst, MSreg op1, MSreg op2);
+
+typedef enum {
+	MSmulop_MUL,
+	MSmulop_MUH,
+	MSmulop_MULU,
+	MSmulop_MUHU,
+} MSmulop;
+
+void MS_emit_mul(MSemitter* e, MSreg dst, MSreg op1, MSreg op2, MSmulop mulop);
+
+typedef enum {
+	MSdivop_DIV,
+	MSdivop_MOD,
+	MSdivop_DIVU,
+	MSdivop_MODU,
+} MSdivop;
+
+void MS_emit_div(MSemitter* e, MSreg dst, MSreg dividend, MSreg divisor, MSdivop divop);
 
 /* Section: Regular Branches */
 

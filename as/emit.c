@@ -100,6 +100,41 @@ void MS_emit_sub(MSemitter* e, MSreg dst, MSreg op1, MSreg op2) {
 	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
 }
 
+#define SOP30 0b011000
+#define SOP31 0b011001
+
+// The multiply family from mips32r6
+void MS_emit_mul(MSemitter* e, MSreg dst, MSreg op1, MSreg op2, MSmulop mulop) {
+	uint32_t ins, sop;
+	switch (mulop) {
+		case MSmulop_MUL: ins = 0b00010; sop = SOP30; break;
+		case MSmulop_MUH: ins = 0b00011; sop = SOP30; break;
+		case MSmulop_MULU: ins = 0b00010; sop = SOP31; break;
+		case MSmulop_MUHU: ins = 0b00011; sop = SOP31; break;
+		default: assert(false); return;
+	}
+
+	DO_PACK_SPECIAL(op1, op2, dst, ins, sop);
+	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
+}
+
+#define SOP32 0b011010
+#define SOP33 0b011011
+
+// The division family from mips32r6
+void MS_emit_div(MSemitter* e, MSreg dst, MSreg dividend, MSreg divisor, MSdivop divop) {
+	uint32_t ins, sop;
+	switch (divop) {
+		case MSdivop_DIV: ins = 0b00010; sop = SOP32; break;
+		case MSdivop_MOD: ins = 0b00011; sop = SOP32; break;
+		case MSdivop_DIVU: ins = 0b00010; sop = SOP33; break;
+		case MSdivop_MODU: ins = 0b00011; sop = SOP33; break;
+		default: assert(false); return;
+	}
+
+	DO_PACK_SPECIAL(dividend, divisor, dst, ins, sop);
+	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
+}
 // TODO should we keep this? or write the BGEZAL and warn on arguments that doesn't match the BAL special case
 // Branch And Link
 void MS_emit_bal(MSemitter* e, MSimmediate offset) {
