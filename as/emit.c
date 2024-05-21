@@ -1,4 +1,5 @@
 #include "emit.h"
+#include "common/buffer.h"
 
 #include <assert.h>
 #include <common/common.h>
@@ -135,6 +136,43 @@ void MS_emit_div(MSemitter* e, MSreg dst, MSreg dividend, MSreg divisor, MSdivop
 	DO_PACK_SPECIAL(dividend, divisor, dst, ins, sop);
 	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
 }
+
+#define OP_LB 0b100000
+#define OP_LBU 0b100100
+#define OP_LH 0b100001
+#define OP_LHU 0b100101
+#define OP_LW 0b100011
+
+void MS_emit_load(MSemitter* e, MSreg dst, MSimmediate offset, MSreg base, MSword word_type, bool is_unsigned) {
+	uint32_t op;
+	switch (word_type) {
+		case MSword_BYTE: op = is_unsigned ? OP_LBU : OP_LB; break;
+		case MSword_HALF: op = is_unsigned ? OP_LHU : OP_LH; break;
+		case MSword_WORD: op = OP_LW; break;
+		default: assert(false); return;
+	}
+
+	DO_PACK_IMM(op, base, dst, offset);
+	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
+}
+
+#define OP_SB 0b101000
+#define OP_SH 0b101001
+#define OP_SW 0b101011
+
+void MS_emit_store(MSemitter* e, MSreg src, MSimmediate offset, MSreg base, MSword word_type, bool is_unsigned) {
+	uint32_t op;
+	switch (word_type) {
+		case MSword_BYTE: op = OP_SB; break;
+		case MSword_HALF: op = OP_SH; break;
+		case MSword_WORD: op = OP_SW; break;
+		default: assert(false); return;
+	}
+
+	DO_PACK_IMM(op, base, src, offset);
+	MS_buf_append_u32(&e->instructions, PACK_GET_VALUE);
+}
+
 // TODO should we keep this? or write the BGEZAL and warn on arguments that doesn't match the BAL special case
 // Branch And Link
 void MS_emit_bal(MSemitter* e, MSimmediate offset) {

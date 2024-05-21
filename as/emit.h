@@ -36,6 +36,17 @@ typedef enum {
 
 void MS_emit_div(MSemitter* e, MSreg dst, MSreg dividend, MSreg divisor, MSdivop divop);
 
+/* Section: Integer Load/Store */
+
+typedef enum {
+	MSword_BYTE, //< 8-bit word, unit of addressing
+	MSword_HALF, //< 16-bit word
+	MSword_WORD, //< 32-bit word
+} MSword;
+
+void MS_emit_load(MSemitter* e, MSreg dst, MSimmediate offset, MSreg base, MSword word_type, bool is_unsigned);
+void MS_emit_store(MSemitter* e, MSreg src, MSimmediate offset, MSreg base, MSword word_type, bool is_unsigned);
+
 /* Section: Regular Branches */
 
 void MS_emit_bal(MSemitter* e, MSimmediate offset);
