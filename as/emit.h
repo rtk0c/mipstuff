@@ -9,6 +9,7 @@ typedef struct MSemitter {
 } MSemitter;
 
 MSemitter MS_make_emitter();
+void MS_destroy_emitter(MSemitter*);
 
 /* Section: Integer Arithmetic */
 

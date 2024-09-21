@@ -13,6 +13,10 @@ MSemitter MS_make_emitter() {
 	return res;
 }
 
+void MS_destroy_emitter(MSemitter* e) {
+	MS_destroy_buf(&e->instructions);
+}
+
 // This does not work for n=32 (filling the whole literal with bit 1), but we don't need it for the emitter
 // WATCH OUT AND BE CAREFULY TO NOT USE IT THAT WAY IN THE FUTURE
 #define MASK(n) ((1 << (n)) - 1)

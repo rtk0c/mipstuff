@@ -1,9 +1,11 @@
 common_sources = files([
+  'arena.c',
   'buffer.c',
   'str.c',
 ])
 
 common_headers = files([
+  'arena.h',
   'buffer.h',
   'str.h',
 ])

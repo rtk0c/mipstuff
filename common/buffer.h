@@ -15,6 +15,9 @@ void MS_destroy_buf(MSbuf* buf);
 
 void MS_buf_resize(MSbuf* buf, size_t new_size);
 
+// We deliberately don't do alignment here, because MSbuf is designed for spitting out over-the-wire formats
+// (or over-the-disk, in the cast of our assembler).
+
 void MS_buf_append(MSbuf* buf, const char* data, size_t len);
 // `static inline` behave as-if C++ `inline`
 // https://stackoverflow.com/questions/31108159/what-is-the-use-of-the-inline-keyword-in-c
