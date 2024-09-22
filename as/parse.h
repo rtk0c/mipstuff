@@ -11,7 +11,7 @@ typedef struct MSparsestate {
 	/*[in]*/ const char* src;
 	/*[in]*/ size_t src_len;
 
-	MSarena arena;
+	MSarena* a;
 	MSemitter emitter;
 } MSparsestate;
 

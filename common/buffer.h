@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+// TODO merge this with MSarena?
+
 typedef struct MSbuf {
 	char* data;
 	size_t fill;
