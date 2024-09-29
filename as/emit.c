@@ -1,8 +1,9 @@
 #include "emit.h"
-#include "common/buffer.h"
+
+#include <common/buffer.h>
+#include <common/common.h>
 
 #include <assert.h>
-#include <common/common.h>
 
 // Macros prefixed with DO_ indicate it performs value validity checks
 // otherwise, it is unchecked.

@@ -2,6 +2,7 @@
 
 #include <common/buffer.h>
 #include <common/mips.h>
+
 #include <stdbool.h>
 
 typedef struct MSemitter {
