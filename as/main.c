@@ -41,19 +41,21 @@ void parse_cli_args(CliArgs* cli, int argc, char** argv) {
 		}
 		if (arg_len > 1 && arg[0] == '-') {
 			// Named argument like --name
-			char* equal_pos = strchr(arg, '=');
-			if (equal_pos) {
+			char* key_part = arg + 1;
+			char* equal_sign = strchr(arg, '=');
+			if (equal_sign) {
 				// Write directly into the slot
-				*find_cli_arg_slot(cli, arg + 2, equal_pos) = equal_pos + 1;
+				char* value_part = equal_sign + 1;
+				*find_cli_arg_slot(cli, key_part, equal_sign) = value_part;
 			} else {
-				// Next argument gets put into named_value_slot
-				named_value_slot = find_cli_arg_slot(cli, arg + 2, arg + arg_len);
+				// No value_part here, next argument gets put into named_value_slot
+				named_value_slot = find_cli_arg_slot(cli, arg + 1, arg + arg_len);
 			}
 			continue;
 		}
 
 		printf("Warning: unused argument %s\n", arg);
- 	}
+	}
 }
 
 int main(int argc, char** argv) {
@@ -74,7 +76,7 @@ int main(int argc, char** argv) {
 		rewind(f);
 		fread(source_code, sizeof(char), source_code_len, f);
 		source_code[source_code_len] = '\0';
-	
+
 		fclose(f);
 	}
 
